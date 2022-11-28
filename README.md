@@ -2,6 +2,8 @@
 
 A minimal implementation of diffusion models with the goal to democratize the use of synthetic data from these models.
 
+Remove distributed training dependencies by Star and tested on pokemon dataset.
+
 Check out the [experimental results](#how-useful-is-synthetic-data-from-diffusion-models-) section for quantitative numbers on quality of synthetic data and [FAQs](#faqs) for a broader discussion. We experiments with nine commonly used datasets, and released all [assets](https://drive.google.com/drive/folders/1CfgFQSsIIfxcpVjIbEWLi2csGTeAo4O2?usp=sharing), including models and synthetic data for each of them. 
 
 **Requirements:** `pip install scipy opencv-python`. We assume torch and torchvision are already installed.
@@ -21,23 +23,18 @@ data.py  - Common datasets and their metadata.
 Use the following command to train the diffusion model on four gpus.
 
 ```
-CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 main.py \
-  --arch UNet --dataset cifar10 --class-cond --epochs 500
+python main.py --arch UNet --dataset pokemon --data-dir path_to_pokemon dataset \
+--batch-size 16 --epochs 100
 ```
-
-We provide the exact script used for training in `./scripts/train.sh`. 
 
 ### Sampling
 We reuse `main.py` for sampling but with the `--sampling-only` only flag. Use the following command to sample 50K images from a pretrained diffusion model. 
 
 ```
-CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 main.py \
-  --arch UNet --dataset cifar10 --class-cond --sampling-only --sampling-steps 250 \
-  --num-sampled-images 50000 --pretrained-ckpt path_to_pretrained_model
+python main.py --arch UNet --dataset pokemon --data-dir /home/star/Dataset/pokemon/ \
+--sampling-only --sampling-steps 250 --num-sampled-images 50000 \
+--pretrained-ckpt path_to_pretrained_model
 ```
-
-We provide the exact script used for sampling in `./scripts/sample.sh`. 
-
 
 
 ## How useful is synthetic data from diffusion models? 🤔

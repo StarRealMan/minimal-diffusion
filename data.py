@@ -7,6 +7,8 @@ from collections import OrderedDict
 from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 
+import cv2
+from tqdm import tqdm
 
 def get_metadata(name):
     if name == "mnist":
@@ -99,6 +101,16 @@ def get_metadata(name):
                 "num_channels": 3,
             }
         )
+    elif name == "pokemon":
+        metadata = EasyDict(
+            {
+                "image_size": 128,
+                "num_classes": 150,
+                "train_images": 6820,
+                "val_images": 0,
+                "num_channels": 3,
+            }
+        )
     else:
         raise ValueError(f"{name} dataset nor supported!")
     return metadata
@@ -129,6 +141,36 @@ class oxford_flowers_dataset(Dataset):
         if self.transform is not None:
             image = self.transform(image)
         return image, target
+
+
+class pokemon_dataset(Dataset):
+    def __init__(self, path, size = 256):
+        super(pokemon_dataset, self).__init__()
+        
+        trans = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize(size),
+            transforms.CenterCrop(size)
+        ])
+            
+        self.items = []
+            
+        for pokemon_num, pokemon in enumerate(tqdm(os.listdir(path)[:], 
+                                             desc = "Loading pokemon type:")):
+            pokemon_path = os.path.join(path, pokemon)
+            for item in os.listdir(pokemon_path)[:]:
+                file_type = item.split('.')[-1]
+                if file_type == "jpg" or file_type == "jpeg" or file_type == "png":
+                    item_path = os.path.join(pokemon_path, item)
+                    item_image = cv2.imread(item_path, cv2.IMREAD_COLOR)
+                    item_image = trans(item_image)
+                    self.items.append((item_image, pokemon_num))
+    
+    def __getitem__(self, index):
+        return self.items[index]
+
+    def __len__(self):
+        return len(self.items)
 
 
 # TODO: Add datasets imagenette/birds/svhn etc etc.
@@ -251,6 +293,10 @@ def get_dataset(name, data_dir, metadata):
             data_dir,
             transform=transform_train,
         )
+    
+    elif name == "pokemon":
+        train_set = pokemon_dataset(data_dir, metadata.image_size)
+    
     else:
         raise ValueError(f"{name} dataset nor supported!")
     return train_set
